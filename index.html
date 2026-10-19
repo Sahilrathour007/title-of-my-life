@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Title of My Life</title>
+  <meta name="description" content="If your life were a film, what would the title be? Write the script of the life you want — anonymously — and read everyone else's.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400&family=Courier+Prime:wght@400;700&family=Inter:wght@400;500;600&display=swap">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='%23e8835a'/><text x='32' y='44' font-size='34' text-anchor='middle' font-family='Georgia' fill='%23fff8ee'>T</text></svg>">
+</head>
+<body>
+  <div class="glow" aria-hidden="true"></div>
+  <main class="wrap">
+    <div class="badge"><span class="dot"></span>Completely anonymous · no name, no email</div>
+
+    <!-- Welcome -->
+    <section id="welcome" class="step" hidden>
+      <p class="eyebrow">A small, kind corner of the internet</p>
+      <h1>If your life were a film,<br>what would it be called?</h1>
+      <p class="lead">Give your life a title. Then write a few lines of the script you'd love to live. Nobody will know it's you — and you'll get to read what others are dreaming of, too.</p>
+      <ol class="how">
+        <li><span>1</span><div><b>Name your film</b>One line. Funny, hopeful, honest — all welcome.</div></li>
+        <li><span>2</span><div><b>Write a scene</b>Where are you? Who's there? It can be three sentences.</div></li>
+        <li><span>3</span><div><b>Pin it to the wall</b>Read others, leave a like or a kind word.</div></li>
+      </ol>
+      <div class="row center">
+        <button id="start" class="primary">Let's begin</button>
+        <button id="peek" class="ghost">Just read the wall first</button>
+      </div>
+      <p class="hint center">Takes about five minutes. There are no wrong answers.</p>
+    </section>
+
+    <!-- Step 1: title -->
+    <section id="s1" class="step" hidden>
+      <div class="progress" aria-label="Step 1 of 2"><i class="on"></i><i></i></div>
+      <h2 class="q-big">What's the title of your film?</h2>
+      <p class="lead small">Don't overthink it — you can always write another one later.</p>
+      <label class="sr" for="ti">Your title</label>
+      <input id="ti" class="title" type="text" maxlength="80" autocomplete="off" placeholder="e.g. The Long Way Home">
+      <div class="chips" id="titleIdeas" aria-label="Title ideas"></div>
+      <div class="row">
+        <button class="ghost" data-go="welcome">← Back</button>
+        <button id="go1" class="primary" disabled>Next</button>
+      </div>
+    </section>
+
+    <!-- Step 2: script -->
+    <section id="s2" class="step" hidden>
+      <div class="progress" aria-label="Step 2 of 2"><i class="on"></i><i class="on"></i></div>
+      <p class="now-showing">Now showing</p>
+      <h2 id="h2t" class="film-title"></h2>
+      <label class="q" for="bo">Write a scene from the life you want to have.</label>
+      <p class="lead small">Present tense works beautifully. Little details matter more than big plans.</p>
+      <textarea id="bo" maxlength="4000" placeholder="INT. A KITCHEN, FIVE YEARS FROM NOW — MORNING&#10;&#10;Sunlight. Coffee. Who is there with you? What are you doing that you couldn't do today?"></textarea>
+      <div class="nudge">
+        <span class="hint">Stuck? Try a nudge:</span>
+        <div class="chips" id="nudges"></div>
+      </div>
+      <div class="row">
+        <button class="ghost" data-go="s1">← Back</button>
+        <span class="hint"><span id="cnt">0</span> / 4000</span>
+        <button id="go2" class="primary" disabled>Pin it to the wall</button>
+      </div>
+      <p class="msg" id="m2" role="status"></p>
+    </section>
+
+    <!-- Wall -->
+    <section id="dash" hidden>
+      <div id="thanks" class="thanks" hidden>
+        <h2>Thank you for sharing. 🌱</h2>
+        <p>Your script is on the wall. Writing down the life you want is the first scene of living it.</p>
+      </div>
+      <h1 class="wall-h">The wall</h1>
+      <p class="lead center">Real scripts from real people — all anonymous. Be kind; someone was brave to write this.</p>
+      <div id="note" class="note" hidden></div>
+      <div class="row center" id="writeCta" hidden><button class="primary" data-go="s1">Write your own</button></div>
+      <div class="pair">
+        <div class="col"><div class="tag">Your script</div><div id="mine"></div></div>
+        <div class="col"><div class="tag">Most loved</div><div id="top"></div></div>
+      </div>
+      <div class="feedhead">
+        <h2>Everyone's scripts</h2>
+        <div class="sort" role="group" aria-label="Sort">
+          <button data-sort="new" aria-pressed="true">Newest</button>
+          <button data-sort="loved" aria-pressed="false">Most loved</button>
+        </div>
+      </div>
+      <p class="hint" id="count"></p>
+      <div id="feed" class="feed"></div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    Made with care. No tracking, no accounts. If you're going through something heavy, please reach out to someone you trust or a local helpline.
+  </footer>
+
+  <script src="config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
