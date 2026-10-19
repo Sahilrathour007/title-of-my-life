@@ -1,12 +1,12 @@
 # Windows version of prepare-video.sh: turns your 16:9 video into web-ready, seamlessly looping background files in media\.
 # Easiest: double-click tools\prepare-video.bat. It finds the video you put in media\ by itself.
-# Or:      powershell -ExecutionPolicy Bypass -File tools\prepare-video.ps1 [video] [-CropX 0.5] [-MaxSeconds 15] [-LoopFade 1]
+# Or:      powershell -ExecutionPolicy Bypass -File tools\prepare-video.ps1 [video] [-CropX 0.5] [-MaxSeconds 60] [-LoopFade 1]
 #   CropX:    where the 9:16 phone cut sits, 0 = left edge, 0.5 = centre, 1 = right edge
 #   LoopFade: seconds of crossfade from the end back into the start, so the loop has no visible jump; 0 = off
 param(
   [string]$Video = "",
   [double]$CropX = 0.5,
-  [double]$MaxSeconds = 15,
+  [double]$MaxSeconds = 60,
   [double]$LoopFade = 1
 )
 $ErrorActionPreference = "Stop"
@@ -68,10 +68,10 @@ try {
   } else { Write-Host "2/5 Clip too short for a loop fade, skipping." }
 
   Write-Host "3/5 Desktop video..."
-  Run @("-i",$src,"-vf","scale=1280:-2","-c:v","libx264","-profile:v","high","-pix_fmt","yuv420p","-crf","28","-preset","slow","-movflags","+faststart",(Join-Path $media "background.mp4"))
+  Run @("-i",$src,"-vf","scale=1280:-2","-c:v","libx264","-profile:v","high","-pix_fmt","yuv420p","-crf","29","-preset","slow","-movflags","+faststart",(Join-Path $media "background.mp4"))
 
   Write-Host "4/5 Phone video (9:16)..."
-  Run @("-i",$src,"-vf","crop=ih*9/16:ih:(iw-ih*9/16)*$(N $CropX):0,scale=720:1280","-c:v","libx264","-profile:v","high","-pix_fmt","yuv420p","-crf","30","-preset","slow","-movflags","+faststart",(Join-Path $media "background-mobile.mp4"))
+  Run @("-i",$src,"-vf","crop=ih*9/16:ih:(iw-ih*9/16)*$(N $CropX):0,scale=720:1280","-c:v","libx264","-profile:v","high","-pix_fmt","yuv420p","-crf","32","-preset","slow","-movflags","+faststart",(Join-Path $media "background-mobile.mp4"))
 
   Write-Host "5/5 WebM copies and poster image..."
   Run @("-i",(Join-Path $media "background.mp4"),"-c:v","libvpx-vp9","-b:v","0","-crf","40","-row-mt","1",(Join-Path $media "background.webm"))

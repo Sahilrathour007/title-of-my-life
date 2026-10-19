@@ -3,13 +3,13 @@
 # Usage: tools/prepare-video.sh path/to/your-video.mov [mobile-crop-x]
 #   mobile-crop-x: where the 9:16 phone cut sits, 0 = left edge, 0.5 = centre (default), 1 = right edge.
 # Options (environment variables):
-#   MAX_SECONDS=15   length to keep from the start of your video
+#   MAX_SECONDS=60   length to keep from the start of your video
 #   LOOP_FADE=1      seconds of crossfade from the end back into the start, so the loop has no visible jump; 0 = off
 # Needs ffmpeg (https://ffmpeg.org/download.html).
 set -euo pipefail
 in="${1:?Usage: tools/prepare-video.sh input-video [mobile-crop-x]}"
 x="${2:-0.5}"
-max="${MAX_SECONDS:-15}"
+max="${MAX_SECONDS:-60}"
 fade="${LOOP_FADE:-1}"
 out="$(cd "$(dirname "$0")/.." && pwd)/media"
 mkdir -p "$out"
@@ -42,11 +42,11 @@ src="$tmp/loop.mp4"
 
 # 3. Desktop video: 1280 px wide, small enough for phones on mobile data.
 ffmpeg -y -v error -i "$src" -vf "scale=1280:-2" -c:v libx264 -profile:v high -pix_fmt yuv420p \
-  -crf 28 -preset slow -movflags +faststart "$out/background.mp4"
+  -crf 29 -preset slow -movflags +faststart "$out/background.mp4"
 
 # 4. Upright phone cut: a 9:16 slice of the frame, 720x1280.
 ffmpeg -y -v error -i "$src" -vf "crop=ih*9/16:ih:(iw-ih*9/16)*$x:0,scale=720:1280" -c:v libx264 -profile:v high \
-  -pix_fmt yuv420p -crf 30 -preset slow -movflags +faststart "$out/background-mobile.mp4"
+  -pix_fmt yuv420p -crf 32 -preset slow -movflags +faststart "$out/background-mobile.mp4"
 
 # 5. WebM twins for browsers without H.264 (the site picks them automatically).
 ffmpeg -y -v error -i "$out/background.mp4" -c:v libvpx-vp9 -b:v 0 -crf 40 -row-mt 1 "$out/background.webm"

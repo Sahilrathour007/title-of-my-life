@@ -110,11 +110,16 @@
     document.body.classList.add("has-video");
     v.muted = true; v.defaultMuted = true; // browsers only autoplay muted video; some check the property, not the attribute
 
-    // Upright phones try the phone cut first, then the desktop video. Each tries its WebM twin before the MP4.
+    // Upright phones try the phone cut first, then the desktop video. MP4 (H.264) comes first because every phone
+    // plays and autoplays it; the WebM twin is only a fallback, since some iPhones claim WebM support but stall on it.
     var files = (portrait && CFG.backgroundVideoMobile) ? [CFG.backgroundVideoMobile, src] : [src];
     var webm = !!v.canPlayType('video/webm; codecs="vp9"'), tries = [];
-    files.forEach(function(f){ if(webm && /\.mp4$/i.test(f)) tries.push(f.replace(/\.mp4$/i,".webm")); tries.push(f) });
-    function play(){ v.play().catch(function(){}) }
+    files.forEach(function(f){ tries.push(f); if(webm && /\.mp4$/i.test(f)) tries.push(f.replace(/\.mp4$/i,".webm")) });
+    v.setAttribute("playsinline",""); v.setAttribute("webkit-playsinline",""); // older iPhones need both to play inline
+    function play(){ if(v.paused) v.play().catch(function(){}) }
+    // Ask again at every stage of loading; some phones ignore the first request until enough data has arrived.
+    ["loadedmetadata","loadeddata","canplay"].forEach(function(ev){ v.addEventListener(ev, play) });
+    addEventListener("pageshow", play); // returning with the back button restores a paused page
     function next(){
       if(!tries.length){
         console.warn("Background video: couldn't play "+files.join(" or ")+". Check the file is in the media folder with exactly that name (web hosts care about upper/lower case), or run tools/prepare-video.");
@@ -127,7 +132,7 @@
     next();
     document.addEventListener("visibilitychange",function(){ if(document.hidden) v.pause(); else play() });
     // Low Power Mode (iPhone) can block autoplay; start on the visitor's first touch, scroll or key instead.
-    ["pointerdown","keydown","scroll","touchstart"].forEach(function(ev){ addEventListener(ev, function(){ if(v.paused) play() }, {once:true, passive:true}) });
+    ["pointerdown","keydown","scroll","touchstart"].forEach(function(ev){ addEventListener(ev, play, {once:true, passive:true}) });
   }
 
   // ---------- state ----------

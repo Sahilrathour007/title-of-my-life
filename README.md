@@ -52,13 +52,13 @@ Don't just rename a `.MOV` to `.mp4`: iPhone videos are usually HEVC, which many
    tools/prepare-video.sh my-video.mp4          # phone cut taken from the centre
    tools/prepare-video.sh my-video.mp4 0.3      # phone cut taken left of centre
    ```
-   It writes `media/background.mp4` (1280 px, 15 s max, silent), a phone cut, WebM copies for browsers without MP4 support, and `media/poster.jpg`.
+   It writes `media/background.mp4` (1280 px, up to 60 s, silent), a phone cut, WebM copies for browsers without MP4 support, and `media/poster.jpg`.
    It also **makes the loop seamless**: the last second crossfades into the first, so the restart has no visible jump.
-   Change it with `LOOP_FADE=2 tools/prepare-video.sh …` (seconds) or turn it off with `LOOP_FADE=0`; `MAX_SECONDS=10` shortens the clip.
+   Change it with `LOOP_FADE=2 tools/prepare-video.sh …` (seconds) or turn it off with `LOOP_FADE=0`; `MAX_SECONDS=20` shortens the clip (default 60).
 2. **Quick:** keep one file and choose which part survives on phones with `videoFocusMobile` in `config.js` (`"50% 50%"` = centre).
 
 Rules that keep it fast and kind on phones:
-- Aim for **under 3 MB**. Phones on mobile data load it before they can read anything.
+- Keep it light: a 1-minute clip comes out around 3–5 MB. It streams, so it starts playing before it has fully loaded.
 - No sound. Browsers only autoplay muted video; the site strips audio anyway.
 - Put the interesting part of the frame in the middle third.
 - `videoOverlay` (0 to 1) controls how much the page colour washes over the video. Only lower it if text stays easy to read.
