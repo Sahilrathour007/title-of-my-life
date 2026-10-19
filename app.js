@@ -101,55 +101,33 @@
 
   // ---------- background video ----------
   function setupVideo(){
-    var v=$("bgv"), btn=$("vidToggle"), src=CFG.backgroundVideo;
+    var v=$("bgv"), src=CFG.backgroundVideo;
     if(!src) return;
     var portrait = matchMedia("(max-aspect-ratio: 1/1)").matches;
-    var reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
-    var saveData = navigator.connection && navigator.connection.saveData;
     if(CFG.backgroundPoster) v.poster = CFG.backgroundPoster;
     v.style.objectPosition = (portrait && CFG.videoFocusMobile) || CFG.videoFocus || "50% 50%";
     if(typeof CFG.videoOverlay==="number") document.documentElement.style.setProperty("--ov", Math.round(CFG.videoOverlay*100)+"%");
     document.body.classList.add("has-video");
-    v.muted = true; v.defaultMuted = true; // some mobile browsers only check the property, not the attribute
+    v.muted = true; v.defaultMuted = true; // browsers only autoplay muted video; some check the property, not the attribute
 
     // Upright phones try the phone cut first, then the desktop video. Each tries its WebM twin before the MP4.
     var files = (portrait && CFG.backgroundVideoMobile) ? [CFG.backgroundVideoMobile, src] : [src];
     var webm = !!v.canPlayType('video/webm; codecs="vp9"'), tries = [];
     files.forEach(function(f){ if(webm && /\.mp4$/i.test(f)) tries.push(f.replace(/\.mp4$/i,".webm")); tries.push(f) });
-
-    var paused=false, started=false;
-    function label(){
-      btn.textContent = paused ? (started ? "▶" : "▶ Play background") : "❚❚";
-      btn.classList.toggle("wide", paused && !started);
-      btn.setAttribute("aria-label", paused ? "Play background video" : "Pause background video");
-      btn.setAttribute("aria-pressed", paused ? "true" : "false");
-    }
+    function play(){ v.play().catch(function(){}) }
     function next(){
       if(!tries.length){
         console.warn("Background video: couldn't play "+files.join(" or ")+". Check the file is in the media folder with exactly that name (web hosts care about upper/lower case), or run tools/prepare-video.");
         if(!CFG.backgroundPoster) document.body.classList.remove("has-video");
-        btn.hidden=true; return;
+        return;
       }
-      v.src = tries.shift(); if(!paused) v.play().catch(function(){});
+      v.src = tries.shift(); play();
     }
-    function start(){ started=true; paused=false; label(); next() }
     v.addEventListener("error", function(){ if(v.error) next() });
-    btn.hidden=false;
-    btn.addEventListener("click",function(){
-      if(!started) return start();
-      paused=!paused; paused ? v.pause() : v.play().catch(function(){}); label();
-    });
-    document.addEventListener("visibilitychange",function(){ if(document.hidden) v.pause(); else if(!paused) v.play().catch(function(){}) });
-
-    // People who asked their device for less motion or less data see the still frame and choose whether to play.
-    if(reduce || saveData){
-      console.info("Background video waiting for a tap: this device asks for "+(reduce?"reduced motion":"data saving")+".");
-      paused=true; label(); return;
-    }
-    start();
-    // Low Power Mode (iPhone) blocks autoplay; start on the visitor's first touch instead.
-    function kick(){ if(v.paused && !paused) v.play().catch(function(){}) }
-    ["pointerdown","keydown","scroll"].forEach(function(ev){ addEventListener(ev, kick, {once:true, passive:true}) });
+    next();
+    document.addEventListener("visibilitychange",function(){ if(document.hidden) v.pause(); else play() });
+    // Low Power Mode (iPhone) can block autoplay; start on the visitor's first touch, scroll or key instead.
+    ["pointerdown","keydown","scroll","touchstart"].forEach(function(ev){ addEventListener(ev, function(){ if(v.paused) play() }, {once:true, passive:true}) });
   }
 
   // ---------- state ----------

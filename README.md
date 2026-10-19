@@ -13,7 +13,7 @@ It's a warmer rework of an earlier dark "theatre" version:
 - **Kind-first wall**: "Love this" instead of "Like", "Leave a kind word…" comments, newest / most-loved sorting
 - Fully anonymous: no names, no emails, no accounts, no tracking
 - **Anonymous ID**: every visitor gets a private code like `AMBER-FOX-7Q4K-9XPM` on their first visit. They can copy it, save it (the share sheet on phones, a .txt file on computers) and use it to get their script back on any device
-- **Background video** that fills any screen, with a separate phone cut, a pause button, and a still image for people who turn off motion or save data
+- **Background video** that fills the first screen and fades into the page, with a separate phone cut; it autoplays for everyone (muted), and starts on first touch where a phone blocks autoplay
 
 ## Run it
 
@@ -62,7 +62,7 @@ Rules that keep it fast and kind on phones:
 - No sound. Browsers only autoplay muted video; the site strips audio anyway.
 - Put the interesting part of the frame in the middle third.
 - `videoOverlay` (0 to 1) controls how much the page colour washes over the video. Only lower it if text stays easy to read.
-- People who turn on "reduce motion" (on Windows: Animation effects off) or data saver see the poster with a "▶ Play background" button instead of autoplay. Low Power Mode on iPhone can also block autoplay, so a good poster matters.
+- The video autoplays for everyone, including people whose device asks for reduced motion (a deliberate choice for this site). Low Power Mode on iPhone can block autoplay until the first touch, so a good poster matters.
 
 ## The anonymous ID
 
