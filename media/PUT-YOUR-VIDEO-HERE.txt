@@ -1,0 +1,12 @@
+Put your background files in this folder:
+
+  background.mp4          your 16:9 video (required for the video background)
+  background-mobile.mp4   9:16 cut for phones held upright
+  background.webm         backup copy for browsers without MP4 support
+  background-mobile.webm  backup copy of the phone cut
+  poster.jpg              a still frame, shown while the video loads
+
+Easiest way: run tools/prepare-video (double-click prepare-video.bat on Windows). It makes all of these for you.
+
+To upload them on github.com: open this media folder, click Add file > Upload files,
+drag in the five files above, then click Commit changes.
