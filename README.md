@@ -45,6 +45,8 @@ Your video is 16:9, but most visitors hold a phone upright (about 9:19.5). Cover
    tools/prepare-video.sh my-video.mp4 0.3      # phone cut taken left of centre
    ```
    It writes `media/background.mp4` (1280 px, 15 s max, silent), a phone cut, WebM copies for browsers without MP4 support, and `media/poster.jpg`.
+   It also **makes the loop seamless**: the last second crossfades into the first, so the restart has no visible jump.
+   Change it with `LOOP_FADE=2 tools/prepare-video.sh …` (seconds) or turn it off with `LOOP_FADE=0`; `MAX_SECONDS=10` shortens the clip.
    Then set `backgroundVideoMobile: "media/background-mobile.mp4"` in `config.js`.
 2. **Quick:** keep one file and choose which part survives on phones with `videoFocusMobile` in `config.js` (`"50% 50%"` = centre).
 

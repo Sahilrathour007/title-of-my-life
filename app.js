@@ -121,7 +121,11 @@
       v.src = tries.shift(); v.play().catch(function(){});
     }
     v.addEventListener("error", next);
+    v.muted = true; v.defaultMuted = true; // some mobile browsers only check the property, not the attribute
     next();
+    // Low Power Mode (iPhone) and some data savers block autoplay; start on the visitor's first touch instead.
+    function kick(){ if(v.paused && !paused) v.play().catch(function(){}) }
+    ["pointerdown","keydown","scroll"].forEach(function(ev){ addEventListener(ev, kick, {once:true, passive:true}) });
     btn.hidden=false;
     var paused=false;
     btn.addEventListener("click",function(){
