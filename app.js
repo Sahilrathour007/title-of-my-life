@@ -331,6 +331,15 @@
   function scriptCard(s,k){
     var card=document.createElement("article"); card.className="script";
     if(s.example){ var ex=document.createElement("span"); ex.className="ex"; ex.textContent="Example"; card.appendChild(ex) }
+    // Author tools sit in their own row at the top of the card, so the like row never has to wrap around them.
+    if(s.owner_hash===me.hash && !s.example){
+      var own=document.createElement("div"); own.className="own";
+      var eb=document.createElement("button"); eb.type="button"; eb.textContent="Edit"; eb.setAttribute("aria-label","Edit “"+s.title+"”");
+      eb.addEventListener("click",function(){ startEditing(s) });
+      var db=document.createElement("button"); db.type="button"; db.className="danger"; db.textContent="Delete"; db.setAttribute("aria-label","Delete “"+s.title+"”");
+      db.addEventListener("click",function(){ deleteScript(s) });
+      own.append(eb,db); card.appendChild(own);
+    }
     var t=document.createElement("p"); t.className="t"; t.textContent=s.title; card.appendChild(t);
     var by=document.createElement("p"); by.className="by";
     by.textContent = s.owner_hash===me.hash ? "written by you ("+tagOf(me.hash)+")" : s.example ? "written by someone like you" : "written by anonymous "+tagOf(s.owner_hash);
@@ -352,12 +361,6 @@
     lb.addEventListener("click",function(){ toggleLike(s.id,lk) });
     bar.appendChild(lb);
     var c=document.createElement("span"); c.textContent = n ? n+(n===1?" person loved this":" people loved this") : "Be the first to show some love"; bar.appendChild(c);
-    if(s.owner_hash===me.hash && !s.example){
-      var own=document.createElement("span"); own.className="own";
-      var eb=document.createElement("button"); eb.type="button"; eb.textContent="Edit"; eb.addEventListener("click",function(){ startEditing(s) });
-      var db=document.createElement("button"); db.type="button"; db.className="danger"; db.textContent="Delete"; db.addEventListener("click",function(){ deleteScript(s) });
-      own.append(eb,db); bar.appendChild(own);
-    }
     card.appendChild(bar);
 
     var cm=document.createElement("div"); cm.className="cm";
