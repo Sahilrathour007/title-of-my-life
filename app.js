@@ -158,6 +158,7 @@
 
   function show(which){
     ["welcome","s1","s2","dash"].forEach(function(k){ $(k).hidden = k!==which });
+    document.body.classList.toggle("on-welcome", which==="welcome");
     window.scrollTo(0,0);
     if(which==="dash") draw();
     if(which==="s1") $("ti").focus();
@@ -166,6 +167,7 @@
   document.querySelectorAll("[data-go]").forEach(function(b){ b.addEventListener("click",function(){ show(b.dataset.go) }) });
   $("start").addEventListener("click",function(){ show("s1") });
   $("peek").addEventListener("click",function(){ show("dash") });
+  document.querySelector(".scrollcue").addEventListener("click",function(e){ e.preventDefault(); $("below").scrollIntoView({behavior:"smooth"}) });
 
   // ---------- ID card ----------
   function flash(el,text){ var o=el.textContent; el.textContent=text; setTimeout(function(){ el.textContent=o },1600) }

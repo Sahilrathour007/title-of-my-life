@@ -170,3 +170,18 @@ dialog{border:1px solid var(--line);border-radius:20px;background:var(--paper);c
 dialog::backdrop{background:rgba(30,18,10,.45)}
 dialog h2{margin:0 0 6px}
 dialog input{text-transform:uppercase;text-align:center;font-weight:700;margin-top:10px}
+
+/* ---------- welcome hero ----------
+   On the welcome screen the video sits only behind the first screenful (the hero) and scrolls away with it;
+   the steps, ID card and buttons sit below it on the plain page. Other screens keep the full-page background. */
+body.on-welcome .topbadge{display:none}
+body.on-welcome .bg{position:absolute;height:100vh;height:100svh}
+body.on-welcome .vidtoggle{position:absolute;top:calc(100vh - 56px);top:calc(100svh - 56px);bottom:auto}
+.hero{min-height:100vh;min-height:100svh;margin-top:-24px;padding:24px 0 20px;display:flex;flex-direction:column;align-items:center}
+.hero .badge{margin-bottom:0}
+.hero-mid{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:32px 0}
+.hero-mid .lead{margin-bottom:0}
+.scrollcue{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;text-decoration:none;font:600 20px var(--sans);
+  color:var(--paper-ink);background:color-mix(in srgb,var(--paper) 85%,transparent);border:1px solid var(--line);animation:nudge 2.4s ease-in-out infinite}
+@keyframes nudge{0%,100%{transform:translateY(0)}50%{transform:translateY(6px)}}
+.below{padding-top:48px}
