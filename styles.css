@@ -148,6 +148,7 @@ body.has-video .lead,body.has-video .hint,body.has-video .eyebrow{color:color-mi
   background:color-mix(in srgb,var(--paper) 85%,transparent);color:var(--paper-ink);
   border:1px solid var(--line);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);opacity:.8}
 .vidtoggle:hover,.vidtoggle:focus-visible{opacity:1}
+.vidtoggle.wide{width:auto;padding:0 16px;border-radius:999px;opacity:1;font-size:14px}
 body:not(.has-video) .vidtoggle{display:none}
 body.has-video .empty,body.has-video .note{background:color-mix(in srgb,var(--paper) 88%,transparent);color:var(--paper-muted);border-color:var(--paper-line)}
 

@@ -57,4 +57,4 @@ ffmpeg -y -v error -i "$src" -frames:v 1 -vf "scale=1280:-2" -q:v 4 -update 1 "$
 
 ls -lh "$out"
 echo
-echo "Done. To use the phone cut, set backgroundVideoMobile: \"media/background-mobile.mp4\" in config.js."
+echo "Done. Refresh the site to see your video."

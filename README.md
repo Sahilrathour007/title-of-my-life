@@ -41,7 +41,7 @@ Your video is 16:9, but most visitors hold a phone upright (about 9:19.5). Cover
 
 **On Windows:** put your video (any name, `.MOV` or `.mp4`) in the `media` folder, then **double-click `tools/prepare-video.bat`**.
 It needs ffmpeg once: open PowerShell and run `winget install --id Gyan.FFmpeg -e`, then open a new window.
-The script does everything below, fixes iPhone HDR colours, moves your original to `media/_original` (not published) and switches on the phone video.
+The script does everything below, fixes iPhone HDR colours, moves your original to `media/_original` (not published).
 
 Don't just rename a `.MOV` to `.mp4`: iPhone videos are usually HEVC, which many browsers can't play, and they're far too big for phones.
 
@@ -55,7 +55,6 @@ Don't just rename a `.MOV` to `.mp4`: iPhone videos are usually HEVC, which many
    It writes `media/background.mp4` (1280 px, 15 s max, silent), a phone cut, WebM copies for browsers without MP4 support, and `media/poster.jpg`.
    It also **makes the loop seamless**: the last second crossfades into the first, so the restart has no visible jump.
    Change it with `LOOP_FADE=2 tools/prepare-video.sh …` (seconds) or turn it off with `LOOP_FADE=0`; `MAX_SECONDS=10` shortens the clip.
-   Then set `backgroundVideoMobile: "media/background-mobile.mp4"` in `config.js`.
 2. **Quick:** keep one file and choose which part survives on phones with `videoFocusMobile` in `config.js` (`"50% 50%"` = centre).
 
 Rules that keep it fast and kind on phones:
@@ -63,7 +62,7 @@ Rules that keep it fast and kind on phones:
 - No sound. Browsers only autoplay muted video; the site strips audio anyway.
 - Put the interesting part of the frame in the middle third.
 - `videoOverlay` (0 to 1) controls how much the page colour washes over the video. Only lower it if text stays easy to read.
-- People who turn on "reduce motion" or data saver get the poster image instead of the video. Low Power Mode on iPhone can also block autoplay, so a good poster matters.
+- People who turn on "reduce motion" (on Windows: Animation effects off) or data saver see the poster with a "▶ Play background" button instead of autoplay. Low Power Mode on iPhone can also block autoplay, so a good poster matters.
 
 ## The anonymous ID
 

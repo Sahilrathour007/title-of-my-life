@@ -86,12 +86,6 @@ if ((Split-Path -Parent (Resolve-Path -LiteralPath $Video)) -eq (Resolve-Path $m
   Write-Host "Moved your original video to media\_original (kept, but not published)."
 }
 
-# Turn on the phone cut in config.js.
-$cfg = Join-Path $root "config.js"
-$text = [IO.File]::ReadAllText($cfg)
-$new = $text -replace 'backgroundVideoMobile:\s*""', 'backgroundVideoMobile: "media/background-mobile.mp4"'
-if ($new -ne $text) { [IO.File]::WriteAllText($cfg, $new); Write-Host "Turned on the phone video in config.js." }
-
 Write-Host ""
 Get-ChildItem -LiteralPath $media -File | Where-Object { $_.Extension -ne ".txt" } | ForEach-Object { "{0,-26} {1,8:N2} MB" -f $_.Name, ($_.Length / 1MB) }
 Write-Host ""
