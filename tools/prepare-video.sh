@@ -55,6 +55,14 @@ ffmpeg -y -v error -i "$out/background-mobile.mp4" -c:v libvpx-vp9 -b:v 0 -crf 4
 # 6. Poster: the loop's first frame, so the still and the video start on the same picture.
 ffmpeg -y -v error -i "$src" -frames:v 1 -vf "scale=1280:-2" -q:v 4 -update 1 "$out/poster.jpg"
 
+# 7. Animated image for phones that block video autoplay (Low Power Mode, WhatsApp/Instagram browsers): images always animate.
+if ffmpeg -hide_banner -encoders 2>/dev/null | grep -q libwebp_anim; then
+  ffmpeg -y -v error -i "$out/background-mobile.mp4" -vf "fps=10,scale=360:-2:flags=lanczos" -c:v libwebp_anim -lossless 0 \
+    -q:v 40 -compression_level 6 -loop 0 -an "$out/background-mobile.webp"
+else
+  echo "Skipped the animated image: this ffmpeg has no WebP support."
+fi
+
 ls -lh "$out"
 echo
 echo "Done. Refresh the site to see your video."

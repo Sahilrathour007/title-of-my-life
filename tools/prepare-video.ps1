@@ -17,7 +17,7 @@ function Fail($msg){ Write-Host ""; Write-Host $msg -ForegroundColor Red; exit 1
 $root  = Split-Path -Parent $PSScriptRoot
 $media = Join-Path $root "media"
 $orig  = Join-Path $media "_original"
-$outputs = @("background.mp4","background-mobile.mp4","background.webm","background-mobile.webm")
+$outputs = @("background.mp4","background-mobile.mp4","background.webm","background-mobile.webm","background-mobile.webp")
 
 if (-not (Get-Command ffmpeg -ErrorAction SilentlyContinue)) {
   Fail ("ffmpeg is not installed. Open PowerShell and run:`n`n    winget install --id Gyan.FFmpeg -e`n`n" +
@@ -73,10 +73,16 @@ try {
   Write-Host "4/5 Phone video (9:16)..."
   Run @("-i",$src,"-vf","crop=ih*9/16:ih:(iw-ih*9/16)*$(N $CropX):0,scale=720:1280","-c:v","libx264","-profile:v","high","-pix_fmt","yuv420p","-crf","32","-preset","slow","-movflags","+faststart",(Join-Path $media "background-mobile.mp4"))
 
-  Write-Host "5/5 WebM copies and poster image..."
+  Write-Host "5/5 WebM copies, poster and animated image..."
   Run @("-i",(Join-Path $media "background.mp4"),"-c:v","libvpx-vp9","-b:v","0","-crf","40","-row-mt","1",(Join-Path $media "background.webm"))
   Run @("-i",(Join-Path $media "background-mobile.mp4"),"-c:v","libvpx-vp9","-b:v","0","-crf","42","-row-mt","1",(Join-Path $media "background-mobile.webm"))
   Run @("-i",$src,"-frames:v","1","-vf","scale=1280:-2","-q:v","4","-update","1",(Join-Path $media "poster.jpg"))
+
+  # Animated image for phones that block video autoplay (Low Power Mode, WhatsApp/Instagram browsers): images always animate.
+  Write-Host "Extra: animated image for phones that block video..."
+  if ((& ffmpeg -hide_banner -encoders 2>$null) -match "libwebp_anim") {
+    Run @("-i",(Join-Path $media "background-mobile.mp4"),"-vf","fps=10,scale=360:-2:flags=lanczos","-c:v","libwebp_anim","-lossless","0","-q:v","40","-compression_level","6","-loop","0","-an",(Join-Path $media "background-mobile.webp"))
+  } else { Write-Host "  Skipped: this ffmpeg has no WebP support. Install the full build: winget install --id Gyan.FFmpeg -e" -ForegroundColor Yellow }
 } finally { Remove-Item -Recurse -Force $tmp -ErrorAction SilentlyContinue }
 
 # Move the big original out of media\ so it isn't published with the site (media\_original is ignored by git).

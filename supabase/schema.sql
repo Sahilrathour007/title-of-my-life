@@ -13,8 +13,10 @@ create table if not exists public.scripts (
   title text not null check (char_length(title) between 1 and 80),
   body text not null check (char_length(body) between 20 and 4000),
   owner_hash text not null,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  edited_at timestamptz
 );
+alter table public.scripts add column if not exists edited_at timestamptz; -- for walls created before editing existed
 
 create table if not exists public.likes (
   script_id uuid not null references public.scripts(id) on delete cascade,
@@ -60,6 +62,22 @@ begin
   return new_id;
 end $$;
 
+-- Only the author (whoever holds the ID that posted it) can edit or delete a script.
+create or replace function public.edit_script(p_key text, p_script uuid, p_title text, p_body text) returns void
+language plpgsql security definer set search_path = public, extensions as $$
+begin
+  update scripts set title = trim(p_title), body = trim(p_body), edited_at = now()
+  where id = p_script and owner_hash = id_hash(p_key);
+  if not found then raise exception 'not your script'; end if;
+end $$;
+
+create or replace function public.delete_script(p_key text, p_script uuid) returns void
+language plpgsql security definer set search_path = public, extensions as $$
+begin
+  delete from scripts where id = p_script and owner_hash = id_hash(p_key); -- likes and comments go with it (on delete cascade)
+  if not found then raise exception 'not your script'; end if;
+end $$;
+
 create or replace function public.toggle_like(p_key text, p_script uuid) returns boolean
 language plpgsql security definer set search_path = public, extensions as $$
 declare h text := id_hash(p_key);
@@ -76,8 +94,10 @@ begin
   insert into comments(script_id, text, owner_hash) values (p_script, trim(p_text), id_hash(p_key));
 end $$;
 
-revoke all on function public.post_script(text,text,text), public.toggle_like(text,uuid), public.add_comment(text,uuid,text) from public;
-grant execute on function public.post_script(text,text,text), public.toggle_like(text,uuid), public.add_comment(text,uuid,text) to anon, authenticated;
+revoke all on function public.post_script(text,text,text), public.edit_script(text,uuid,text,text), public.delete_script(text,uuid),
+  public.toggle_like(text,uuid), public.add_comment(text,uuid,text) from public;
+grant execute on function public.post_script(text,text,text), public.edit_script(text,uuid,text,text), public.delete_script(text,uuid),
+  public.toggle_like(text,uuid), public.add_comment(text,uuid,text) to anon, authenticated;
 
 -- Live updates on the wall.
 alter publication supabase_realtime add table public.scripts, public.likes, public.comments;

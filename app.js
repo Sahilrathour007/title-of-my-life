@@ -67,6 +67,17 @@
       shared:false,
       load:async function(){ return JSON.parse(JSON.stringify(d)) },
       addScript:async function(title,body){ var s={id:rid(),title:title,body:body,owner_hash:me.hash,created_at:Date.now()}; d.scripts.push(s); save(); return s.id },
+      updateScript:async function(id,title,body){
+        var s=d.scripts.find(function(x){ return x.id===id && x.owner_hash===me.hash }); if(!s) throw new Error("not yours");
+        s.title=title; s.body=body; s.edited_at=Date.now(); save();
+      },
+      deleteScript:async function(id){
+        if(!d.scripts.some(function(x){ return x.id===id && x.owner_hash===me.hash })) throw new Error("not yours");
+        d.scripts=d.scripts.filter(function(x){ return x.id!==id });
+        d.likes=d.likes.filter(function(x){ return x.script_id!==id });
+        d.comments=d.comments.filter(function(x){ return x.script_id!==id });
+        save();
+      },
       toggleLike:async function(id){
         var had = d.likes.some(function(l){ return l.script_id===id&&l.owner_hash===me.hash });
         if(had) d.likes=d.likes.filter(function(l){ return !(l.script_id===id&&l.owner_hash===me.hash) });
@@ -86,13 +97,15 @@
       shared:true,
       load:async function(){
         var res = await Promise.all([
-          sb.from("scripts").select("id,title,body,owner_hash,created_at").order("created_at",{ascending:false}).limit(300),
+          sb.from("scripts").select("id,title,body,owner_hash,created_at,edited_at").order("created_at",{ascending:false}).limit(300),
           sb.from("likes").select("script_id,owner_hash").limit(5000),
           sb.from("comments").select("id,script_id,text,owner_hash,created_at").order("created_at",{ascending:true}).limit(2000)
         ]);
         return {scripts:ts(ok(res[0])), likes:ok(res[1]), comments:ts(ok(res[2]))};
       },
       addScript:async function(title,body){ return ok(await sb.rpc("post_script",{p_key:me.id,p_title:title,p_body:body})) },
+      updateScript:async function(id,title,body){ ok(await sb.rpc("edit_script",{p_key:me.id,p_script:id,p_title:title,p_body:body})) },
+      deleteScript:async function(id){ ok(await sb.rpc("delete_script",{p_key:me.id,p_script:id})) },
       toggleLike:async function(id){ ok(await sb.rpc("toggle_like",{p_key:me.id,p_script:id})) },
       addComment:async function(id,text){ ok(await sb.rpc("add_comment",{p_key:me.id,p_script:id,p_text:text})) },
       subscribe:function(cb){ sb.channel("wall").on("postgres_changes",{event:"*",schema:"public"},cb).subscribe() }
@@ -100,54 +113,81 @@
   }
 
   // ---------- background video ----------
+  // The background only lives on the home screen. Returns setActive(bool), called from show().
+  var video = {setActive:function(){}};
   function setupVideo(){
-    var v=$("bgv"), src=CFG.backgroundVideo;
+    var v=$("bgv"), img=$("bgimg"), src=CFG.backgroundVideo;
     if(!src) return;
     var portrait = matchMedia("(max-aspect-ratio: 1/1)").matches;
     if(CFG.backgroundPoster) v.poster = CFG.backgroundPoster;
-    v.style.objectPosition = (portrait && CFG.videoFocusMobile) || CFG.videoFocus || "50% 50%";
+    v.style.objectPosition = img.style.objectPosition = (portrait && CFG.videoFocusMobile) || CFG.videoFocus || "50% 50%";
     if(typeof CFG.videoOverlay==="number") document.documentElement.style.setProperty("--ov", Math.round(CFG.videoOverlay*100)+"%");
-    document.body.classList.add("has-video");
     v.muted = true; v.defaultMuted = true; // browsers only autoplay muted video; some check the property, not the attribute
+    v.setAttribute("playsinline",""); v.setAttribute("webkit-playsinline",""); // older iPhones need both to play inline
 
     // Upright phones try the phone cut first, then the desktop video. MP4 (H.264) comes first because every phone
     // plays and autoplays it; the WebM twin is only a fallback, since some iPhones claim WebM support but stall on it.
     var files = (portrait && CFG.backgroundVideoMobile) ? [CFG.backgroundVideoMobile, src] : [src];
     var webm = !!v.canPlayType('video/webm; codecs="vp9"'), tries = [];
     files.forEach(function(f){ tries.push(f); if(webm && /\.mp4$/i.test(f)) tries.push(f.replace(/\.mp4$/i,".webm")) });
-    v.setAttribute("playsinline",""); v.setAttribute("webkit-playsinline",""); // older iPhones need both to play inline
-    function play(){ if(v.paused) v.play().catch(function(){}) }
+
+    var ok=true, active=false, usingImage=false;
+    function useImage(){
+      // Phones that refuse video autoplay (iPhone Low Power Mode, Android data saver, WhatsApp/Instagram's built-in
+      // browsers) still animate images, so show the animated WebP made by tools/prepare-video instead.
+      if(usingImage || !CFG.backgroundAnimated) return;
+      usingImage=true;
+      img.onerror=function(){ usingImage=false; img.hidden=true; v.hidden=false };
+      img.src=CFG.backgroundAnimated; img.hidden=false; v.hidden=true; v.pause();
+    }
+    function play(){
+      if(!active || usingImage || !v.paused) return;
+      var p=v.play();
+      if(p && p.catch) p.catch(function(e){ if(e && e.name==="NotAllowedError") useImage() });
+    }
     // Ask again at every stage of loading; some phones ignore the first request until enough data has arrived.
     ["loadedmetadata","loadeddata","canplay"].forEach(function(ev){ v.addEventListener(ev, play) });
     addEventListener("pageshow", play); // returning with the back button restores a paused page
     function next(){
       if(!tries.length){
         console.warn("Background video: couldn't play "+files.join(" or ")+". Check the file is in the media folder with exactly that name (web hosts care about upper/lower case), or run tools/prepare-video.");
-        if(!CFG.backgroundPoster) document.body.classList.remove("has-video");
+        if(!CFG.backgroundPoster){ ok=false; document.body.classList.remove("has-video") }
         return;
       }
       v.src = tries.shift(); play();
     }
     v.addEventListener("error", function(){ if(v.error) next() });
-    next();
     document.addEventListener("visibilitychange",function(){ if(document.hidden) v.pause(); else play() });
-    // Low Power Mode (iPhone) can block autoplay; start on the visitor's first touch, scroll or key instead.
-    ["pointerdown","keydown","scroll","touchstart"].forEach(function(ev){ addEventListener(ev, play, {once:true, passive:true}) });
+    // If the video still hasn't started a few seconds after it could have, treat autoplay as blocked.
+    setTimeout(function(){ if(active && v.paused && v.readyState>=2) useImage() }, 3500);
+    ["pointerdown","keydown","touchstart"].forEach(function(ev){ addEventListener(ev, play, {once:true, passive:true}) });
+
+    var loaded=false;
+    video.setActive=function(on){
+      active=on;
+      document.body.classList.toggle("has-video", ok && on);
+      if(!on){ v.pause(); return }
+      if(!loaded){ loaded=true; next() } else play();
+    };
   }
 
   // ---------- state ----------
   var store=null, data={scripts:[],likes:[],comments:[]};
-  var draftTitle="", sortBy="new", busy={}, expanded={}, justPosted=false;
+  var draftTitle="", sortBy="new", busy={}, expanded={}, justPosted=false, editing=null;
 
   function show(which){
     ["welcome","s1","s2","dash"].forEach(function(k){ $(k).hidden = k!==which });
     document.body.classList.toggle("on-welcome", which==="welcome");
+    video.setActive(which==="welcome");
     window.scrollTo(0,0);
     if(which==="dash") draw();
     if(which==="s1") $("ti").focus();
     if(which==="s2") $("bo").focus();
   }
-  document.querySelectorAll("[data-go]").forEach(function(b){ b.addEventListener("click",function(){ show(b.dataset.go) }) });
+  document.querySelectorAll("[data-go]").forEach(function(b){ b.addEventListener("click",function(){
+    if(editing && b.dataset.go==="welcome"){ stopEditing(); $("ti").value=""; $("bo").value=""; return show("dash") }
+    show(b.dataset.go);
+  }) });
   $("start").addEventListener("click",function(){ show("s1") });
   $("peek").addEventListener("click",function(){ show("dash") });
   document.querySelector(".scrollcue").addEventListener("click",function(e){ e.preventDefault(); $("below").scrollIntoView({behavior:"smooth"}) });
@@ -244,17 +284,40 @@
   });
   $("go2").addEventListener("click",async function(){
     var body=$("bo").value.trim(); if(!draftTitle||body.length<20||!store) return;
-    $("go2").disabled=true; $("m2").textContent="Pinning it up…";
+    $("go2").disabled=true; $("m2").textContent = editing ? "Saving your changes…" : "Pinning it up…";
     try{
-      var id = await store.addScript(draftTitle,body);
-      lsSet("toml_mine",id);
-      justPosted=true; $("bo").value=""; $("ti").value=""; $("cnt").textContent="0"; $("m2").textContent="";
+      if(editing){ await store.updateScript(editing,draftTitle,body); justPosted=false }
+      else { lsSet("toml_mine", await store.addScript(draftTitle,body)); justPosted=true }
+      stopEditing(); $("bo").value=""; $("ti").value=""; $("cnt").textContent="0"; $("m2").textContent="";
       await refresh(); show("dash");
     }catch(e){
-      $("m2").textContent="We couldn't pin it just now. Your words are safe here — please try again.";
+      $("m2").textContent="We couldn't save it just now. Your words are safe here — please try again.";
       $("go2").disabled=false;
     }
   });
+
+  // Editing reuses the two writing steps, prefilled, with the labels switched.
+  function startEditing(s){
+    editing=s.id;
+    $("ti").value=s.title; $("ti").dispatchEvent(new Event("input"));
+    $("bo").value=s.body; $("bo").dispatchEvent(new Event("input"));
+    $("go2").textContent="Save changes";
+    document.querySelector("#s1 .q-big").textContent="Edit your title";
+    show("s1");
+  }
+  function stopEditing(){
+    editing=null;
+    $("go2").textContent="Pin it to the wall";
+    document.querySelector("#s1 .q-big").textContent="What's the title of your film?";
+  }
+  async function deleteScript(s){
+    if(!confirm("Delete “"+s.title+"”?\n\nIt will be removed from the wall for everyone, with its likes and comments. This can't be undone.")) return;
+    try{
+      await store.deleteScript(s.id);
+      if(lsGet("toml_mine",null)===s.id) lsSet("toml_mine",null);
+      justPosted=false; await refresh();
+    }catch(e){ alert("We couldn't delete it just now. Please try again.") }
+  }
 
   // ---------- wall ----------
   function likeCount(id){ var n=0; data.likes.forEach(function(l){ if(l.script_id===id) n++ }); return n }
@@ -271,6 +334,7 @@
     var t=document.createElement("p"); t.className="t"; t.textContent=s.title; card.appendChild(t);
     var by=document.createElement("p"); by.className="by";
     by.textContent = s.owner_hash===me.hash ? "written by you ("+tagOf(me.hash)+")" : s.example ? "written by someone like you" : "written by anonymous "+tagOf(s.owner_hash);
+    if(s.edited_at) by.textContent+=" · edited";
     card.appendChild(by);
     var b=document.createElement("p"); b.className="b"; b.textContent=s.body;
     var long = s.body.length>600 || s.body.split("\n").length>14, open = !long || expanded[s.id+k];
@@ -288,6 +352,12 @@
     lb.addEventListener("click",function(){ toggleLike(s.id,lk) });
     bar.appendChild(lb);
     var c=document.createElement("span"); c.textContent = n ? n+(n===1?" person loved this":" people loved this") : "Be the first to show some love"; bar.appendChild(c);
+    if(s.owner_hash===me.hash && !s.example){
+      var own=document.createElement("span"); own.className="own";
+      var eb=document.createElement("button"); eb.type="button"; eb.textContent="Edit"; eb.addEventListener("click",function(){ startEditing(s) });
+      var db=document.createElement("button"); db.type="button"; db.className="danger"; db.textContent="Delete"; db.addEventListener("click",function(){ deleteScript(s) });
+      own.append(eb,db); bar.appendChild(own);
+    }
     card.appendChild(bar);
 
     var cm=document.createElement("div"); cm.className="cm";
