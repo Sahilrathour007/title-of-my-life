@@ -1,5 +1,6 @@
 (function(){
   var $ = function(id){ return document.getElementById(id) };
+  var CFG = window.TOML_CONFIG || {};
 
   var TITLE_IDEAS = ["The Long Way Home", "Late Bloomer", "Still Becoming", "Small Town, Big Sky", "Second Act", "Nothing Wasted"];
   var NUDGES = [
@@ -15,64 +16,121 @@
     {title:"Second Act", body:"INT. A LECTURE HALL — DAY\n\nThe front row is full of people who look like I used to: tired, curious, a little scared. I tell them how I changed careers at 35. Someone in the back starts taking notes."}
   ];
 
-  // ---------- storage backends ----------
-  function rid(){ return (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36)+Math.random().toString(36).slice(2)) }
   function lsGet(k,d){ try{ var v=localStorage.getItem(k); return v?JSON.parse(v):d }catch(e){ return d } }
   function lsSet(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)) }catch(e){} }
+  function rid(){ return crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36)+Math.random().toString(36).slice(2) }
 
+  // ---------- anonymous identity ----------
+  // The ID is the only credential: a random code like AMBER-FOX-7Q4K-9XPM (~50 bits).
+  // Only its SHA-256 hash is ever stored with scripts, and cards show a short public tag (#A3F9).
+  var ADJ = ["AMBER","BRAVE","CALM","CORAL","DAWN","EARLY","FIERY","GENTLE","GOLDEN","HAZEL","IVORY","JADE","KIND","LUNAR","MAPLE","MISTY",
+             "NOBLE","OCEAN","PEARL","QUIET","ROSY","RUSTY","SILVER","SOFT","SUNNY","TIDAL","VELVET","WARM","WILD","WISE","YOUNG","ZESTY"];
+  var NOUN = ["FOX","OWL","WREN","HARE","LARK","DEER","OTTER","ROBIN","SWAN","BEAR","LYNX","MOTH","FINCH","CRANE","HERON","SEAL",
+              "PINE","FERN","OAK","WILLOW","RIVER","STONE","CLOUD","EMBER","COMET","HARBOR","MEADOW","ORCHID","CEDAR","DUNE","TIDE","STAR"];
+  var B32 = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+  var ID_RE = /^([A-Z]+)-([A-Z]+)-([0-9A-Z]{4})-([0-9A-Z]{4})$/;
+
+  function newId(){
+    var r = new Uint8Array(10); crypto.getRandomValues(r);
+    var code=""; for(var i=2;i<10;i++) code += B32[r[i]&31];
+    return ADJ[r[0]&31]+"-"+NOUN[r[1]&31]+"-"+code.slice(0,4)+"-"+code.slice(4);
+  }
+  function normalizeId(s){
+    s = String(s||"").toUpperCase().trim().replace(/[\s_]+/g,"-").replace(/-+/g,"-");
+    var m = s.match(ID_RE);
+    return m && ADJ.indexOf(m[1])>=0 && NOUN.indexOf(m[2])>=0 ? s : null;
+  }
+  async function sha256(s){
+    var buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
+    return Array.from(new Uint8Array(buf)).map(function(b){ return b.toString(16).padStart(2,"0") }).join("");
+  }
+  function tagOf(hash){ return "#"+String(hash||"").slice(0,4).toUpperCase() }
+
+  var me = {id:null, hash:null, fresh:false};
+  async function setIdentity(id, fresh){
+    me.id=id; me.hash=await sha256(id); me.fresh=!!fresh;
+    lsSet("toml_id", id);
+  }
+
+  // ---------- storage backends ----------
   // Local mode: a private wall in this browser, seeded with labelled examples.
   function localStore(){
-    var uid = lsGet("toml_uid",null); if(!uid){ uid=rid(); lsSet("toml_uid",uid) }
-    var d = lsGet("toml_data",null);
+    var d = lsGet("toml_v2",null);
     if(!d){
       var t=Date.now();
-      d={scripts:EXAMPLES.map(function(x,i){ return {id:"ex"+i,title:x.title,body:x.body,owner:"example",created_at:t-(i+1)*864e5,example:true} }),
-         likes:[{script_id:"ex0",uid:"example"}], comments:[{id:"c0",script_id:"ex0",text:"This made me smile. Go open that bakery.",created_at:t}]};
-      lsSet("toml_data",d);
+      d={scripts:EXAMPLES.map(function(x,i){ return {id:"ex"+i,title:x.title,body:x.body,owner_hash:"example"+i,created_at:t-(i+1)*864e5,example:true} }),
+         likes:[{script_id:"ex0",owner_hash:"example1"}], comments:[{id:"c0",script_id:"ex0",text:"This made me smile. Go open that bakery.",created_at:t}]};
+      lsSet("toml_v2",d);
     }
-    function save(){ lsSet("toml_data",d) }
+    function save(){ lsSet("toml_v2",d) }
     return {
-      shared:false, uid:uid, canWrite:true,
+      shared:false,
       load:async function(){ return JSON.parse(JSON.stringify(d)) },
-      addScript:async function(title,body){ var s={id:rid(),title:title,body:body,owner:uid,created_at:Date.now()}; d.scripts.push(s); save(); return s.id },
-      toggleLike:async function(id,liked){
-        if(liked) d.likes=d.likes.filter(function(l){ return !(l.script_id===id&&l.uid===uid) });
-        else d.likes.push({script_id:id,uid:uid});
+      addScript:async function(title,body){ var s={id:rid(),title:title,body:body,owner_hash:me.hash,created_at:Date.now()}; d.scripts.push(s); save(); return s.id },
+      toggleLike:async function(id){
+        var had = d.likes.some(function(l){ return l.script_id===id&&l.owner_hash===me.hash });
+        if(had) d.likes=d.likes.filter(function(l){ return !(l.script_id===id&&l.owner_hash===me.hash) });
+        else d.likes.push({script_id:id,owner_hash:me.hash});
         save();
       },
-      addComment:async function(id,text){ d.comments.push({id:rid(),script_id:id,text:text,uid:uid,created_at:Date.now()}); save() }
+      addComment:async function(id,text){ d.comments.push({id:rid(),script_id:id,text:text,owner_hash:me.hash,created_at:Date.now()}); save() }
     };
   }
 
-  // Shared mode: Supabase with anonymous sign-in, so every visitor gets a private id without an account.
-  async function supabaseStore(cfg){
-    var sb = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
-    var ses = (await sb.auth.getSession()).data.session;
-    if(!ses){ var r = await sb.auth.signInAnonymously(); if(r.error) throw r.error; ses = r.data.session }
-    var uid = ses.user.id;
+  // Shared mode: Supabase. Writes go through database functions that check the ID server-side (supabase/schema.sql).
+  function supabaseStore(cfg){
+    var sb = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey, {auth:{persistSession:false}});
     function ok(r){ if(r.error) throw r.error; return r.data }
     function ts(rows){ return rows.map(function(x){ x.created_at=Date.parse(x.created_at); return x }) }
-    var st = {
-      shared:true, uid:uid, canWrite:true,
+    return {
+      shared:true,
       load:async function(){
         var res = await Promise.all([
-          sb.from("scripts").select("id,title,body,owner,created_at").order("created_at",{ascending:false}).limit(300),
-          sb.from("likes").select("script_id,uid").limit(5000),
-          sb.from("comments").select("id,script_id,text,uid,created_at").order("created_at",{ascending:true}).limit(2000)
+          sb.from("scripts").select("id,title,body,owner_hash,created_at").order("created_at",{ascending:false}).limit(300),
+          sb.from("likes").select("script_id,owner_hash").limit(5000),
+          sb.from("comments").select("id,script_id,text,owner_hash,created_at").order("created_at",{ascending:true}).limit(2000)
         ]);
         return {scripts:ts(ok(res[0])), likes:ok(res[1]), comments:ts(ok(res[2]))};
       },
-      addScript:async function(title,body){ return ok(await sb.from("scripts").insert({title:title,body:body,owner:uid}).select("id").single()).id },
-      toggleLike:async function(id,liked){
-        if(liked) ok(await sb.from("likes").delete().eq("script_id",id).eq("uid",uid));
-        else ok(await sb.from("likes").insert({script_id:id,uid:uid}));
-      },
-      addComment:async function(id,text){ ok(await sb.from("comments").insert({script_id:id,text:text,uid:uid})) },
-      subscribe:function(cb){
-        sb.channel("wall").on("postgres_changes",{event:"*",schema:"public"},cb).subscribe();
-      }
+      addScript:async function(title,body){ return ok(await sb.rpc("post_script",{p_key:me.id,p_title:title,p_body:body})) },
+      toggleLike:async function(id){ ok(await sb.rpc("toggle_like",{p_key:me.id,p_script:id})) },
+      addComment:async function(id,text){ ok(await sb.rpc("add_comment",{p_key:me.id,p_script:id,p_text:text})) },
+      subscribe:function(cb){ sb.channel("wall").on("postgres_changes",{event:"*",schema:"public"},cb).subscribe() }
     };
-    return st;
+  }
+
+  // ---------- background video ----------
+  function setupVideo(){
+    var v=$("bgv"), btn=$("vidToggle"), src=CFG.backgroundVideo;
+    if(!src) return;
+    var portrait = matchMedia("(max-aspect-ratio: 1/1)").matches;
+    var reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    var saveData = navigator.connection && navigator.connection.saveData;
+    if(CFG.backgroundPoster) v.poster = CFG.backgroundPoster;
+    v.style.objectPosition = (portrait && CFG.videoFocusMobile) || CFG.videoFocus || "50% 50%";
+    if(typeof CFG.videoOverlay==="number") document.documentElement.style.setProperty("--ov", Math.round(CFG.videoOverlay*100)+"%");
+    document.body.classList.add("has-video");
+    // Respect people who asked for less motion or less data: show the still frame only.
+    if(reduce || saveData){ if(!CFG.backgroundPoster) document.body.classList.remove("has-video"); return }
+    // Try a WebM twin (same name, .webm) where supported, then the MP4; if nothing plays, fall back to the plain page.
+    var file = (portrait && CFG.backgroundVideoMobile) || src;
+    var tries = [file];
+    if(/\.mp4$/i.test(file) && v.canPlayType('video/webm; codecs="vp9"')) tries.unshift(file.replace(/\.mp4$/i,".webm"));
+    function next(){
+      if(!tries.length){ document.body.classList.remove("has-video"); btn.hidden=true; return }
+      v.src = tries.shift(); v.play().catch(function(){});
+    }
+    v.addEventListener("error", next);
+    next();
+    btn.hidden=false;
+    var paused=false;
+    btn.addEventListener("click",function(){
+      paused=!paused; paused ? v.pause() : v.play().catch(function(){});
+      btn.textContent = paused ? "▶" : "❚❚";
+      btn.setAttribute("aria-label", paused ? "Play background video" : "Pause background video");
+      btn.setAttribute("aria-pressed", paused?"true":"false");
+    });
+    document.addEventListener("visibilitychange",function(){ if(document.hidden) v.pause(); else if(!paused) v.play().catch(function(){}) });
   }
 
   // ---------- state ----------
@@ -89,6 +147,68 @@
   document.querySelectorAll("[data-go]").forEach(function(b){ b.addEventListener("click",function(){ show(b.dataset.go) }) });
   $("start").addEventListener("click",function(){ show("s1") });
   $("peek").addEventListener("click",function(){ show("dash") });
+
+  // ---------- ID card ----------
+  function flash(el,text){ var o=el.textContent; el.textContent=text; setTimeout(function(){ el.textContent=o },1600) }
+  function idText(){
+    return "Title of My Life — your anonymous ID\n\n"+me.id+"\n\nKeep it private: anyone with this ID can post as you.\nTo come back on any device, open the site, tap “Use a saved ID” and paste it.\n";
+  }
+  function renderIdCards(){
+    document.querySelectorAll("[data-id-slot]").forEach(function(slot){
+      var compact = slot.dataset.idSlot==="compact";
+      var c=document.createElement("div"); c.className="idcard"+(compact?" compact":"");
+      var h=document.createElement("div"); h.className="idhead";
+      h.innerHTML='<span class="idlabel"></span><span class="idtag"></span>';
+      h.querySelector(".idlabel").textContent = me.fresh&&!compact ? "Your new anonymous ID" : "Your anonymous ID";
+      h.querySelector(".idtag").textContent = "shows as "+tagOf(me.hash);
+      var code=document.createElement("output"); code.className="idcode"; code.textContent=me.id;
+      var p=document.createElement("p"); p.className="idnote";
+      p.textContent="No name, no email — this code is you here. Save it to find your script again on any device. Keep it private.";
+      var row=document.createElement("div"); row.className="idrow";
+      var copy=document.createElement("button"); copy.type="button"; copy.textContent="Copy";
+      copy.addEventListener("click",async function(){
+        try{ await navigator.clipboard.writeText(me.id); flash(copy,"Copied ✓") }
+        catch(e){ var r=document.createRange(); r.selectNodeContents(code); getSelection().removeAllRanges(); getSelection().addRange(r); flash(copy,"Press Ctrl/⌘+C") }
+      });
+      var save=document.createElement("button"); save.type="button"; save.textContent="Save";
+      save.addEventListener("click",async function(){
+        // Phones: the share sheet lets people save to Notes/Photos/Messages to themselves. Elsewhere: download a .txt.
+        if(navigator.share && matchMedia("(pointer:coarse)").matches){
+          try{ await navigator.share({title:"My anonymous ID", text:idText()}); return }catch(e){ if(e && e.name==="AbortError") return }
+        }
+        var a=document.createElement("a");
+        a.href=URL.createObjectURL(new Blob([idText()],{type:"text/plain"}));
+        a.download="title-of-my-life-id.txt"; document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(function(){ URL.revokeObjectURL(a.href) },1000);
+        flash(save,"Saved ✓");
+      });
+      var use=document.createElement("button"); use.type="button"; use.className="link"; use.textContent="Use a saved ID";
+      use.addEventListener("click",openRestore);
+      row.append(copy,save,use);
+      if(compact){
+        var det=document.createElement("details"); var sum=document.createElement("summary");
+        sum.textContent="You're anonymous "+tagOf(me.hash)+" · your ID";
+        det.append(sum,code,p,row); c.append(det);
+      } else c.append(h,code,p,row);
+      slot.replaceChildren(c);
+    });
+  }
+  function openRestore(){
+    $("rid").value=""; $("rmsg").textContent="";
+    if($("restore").showModal) $("restore").showModal(); else $("restore").setAttribute("open","");
+    $("rid").focus();
+  }
+  $("rcancel").addEventListener("click",function(){ $("restore").close ? $("restore").close() : $("restore").removeAttribute("open") });
+  $("rform").addEventListener("submit",async function(e){
+    e.preventDefault();
+    var id=normalizeId($("rid").value);
+    if(!id){ $("rmsg").textContent="That doesn't look like an ID. It should be like AMBER-FOX-7Q4K-9XPM."; return }
+    await setIdentity(id,false);
+    lsSet("toml_mine",null); justPosted=false;
+    $("restore").close ? $("restore").close() : $("restore").removeAttribute("open");
+    renderIdCards(); await refresh();
+    if(myScript()) show("dash"); else draw();
+  });
 
   // ---------- step 1 ----------
   TITLE_IDEAS.forEach(function(t){
@@ -134,10 +254,10 @@
 
   // ---------- wall ----------
   function likeCount(id){ var n=0; data.likes.forEach(function(l){ if(l.script_id===id) n++ }); return n }
-  function iLiked(id){ return data.likes.some(function(l){ return l.script_id===id && l.uid===store.uid }) }
+  function iLiked(id){ return data.likes.some(function(l){ return l.script_id===id && l.owner_hash===me.hash }) }
   function myScript(){
     var saved=lsGet("toml_mine",null), found=null;
-    data.scripts.forEach(function(s){ if(s.owner===store.uid || s.id===saved){ if(!found||s.created_at>found.created_at) found=s } });
+    data.scripts.forEach(function(s){ if(s.owner_hash===me.hash || s.id===saved){ if(!found||s.created_at>found.created_at) found=s } });
     return found;
   }
 
@@ -145,7 +265,9 @@
     var card=document.createElement("article"); card.className="script";
     if(s.example){ var ex=document.createElement("span"); ex.className="ex"; ex.textContent="Example"; card.appendChild(ex) }
     var t=document.createElement("p"); t.className="t"; t.textContent=s.title; card.appendChild(t);
-    var by=document.createElement("p"); by.className="by"; by.textContent = s.owner===store.uid ? "written by you" : "written by someone like you"; card.appendChild(by);
+    var by=document.createElement("p"); by.className="by";
+    by.textContent = s.owner_hash===me.hash ? "written by you ("+tagOf(me.hash)+")" : s.example ? "written by someone like you" : "written by anonymous "+tagOf(s.owner_hash);
+    card.appendChild(by);
     var b=document.createElement("p"); b.className="b"; b.textContent=s.body;
     var long = s.body.length>600 || s.body.split("\n").length>14, open = !long || expanded[s.id+k];
     if(!open) b.classList.add("clamp");
@@ -165,7 +287,11 @@
     card.appendChild(bar);
 
     var cm=document.createElement("div"); cm.className="cm";
-    data.comments.filter(function(x){ return x.script_id===s.id }).forEach(function(x){ var p=document.createElement("p"); p.textContent=x.text; cm.appendChild(p) });
+    data.comments.filter(function(x){ return x.script_id===s.id }).forEach(function(x){
+      var p=document.createElement("p"); p.textContent=x.text;
+      if(x.owner_hash){ var w=document.createElement("small"); w.textContent=" — "+(x.owner_hash===me.hash?"you":tagOf(x.owner_hash)); p.appendChild(w) }
+      cm.appendChild(p);
+    });
     var f=document.createElement("form");
     var inp=document.createElement("input"); inp.type="text"; inp.maxLength=280; inp.placeholder="Leave a kind word…"; inp.setAttribute("aria-label","Comment"); inp.dataset.k="c"+s.id+k;
     var sb=document.createElement("button"); sb.type="submit"; sb.textContent="Send";
@@ -177,11 +303,11 @@
 
   async function toggleLike(id,liked){
     if(busy[id]) return; busy[id]=true;
-    // optimistic update, then reconcile with the server
-    if(liked) data.likes=data.likes.filter(function(l){ return !(l.script_id===id&&l.uid===store.uid) });
-    else data.likes.push({script_id:id,uid:store.uid});
+    // optimistic update, then reconcile with the store
+    if(liked) data.likes=data.likes.filter(function(l){ return !(l.script_id===id&&l.owner_hash===me.hash) });
+    else data.likes.push({script_id:id,owner_hash:me.hash});
     draw();
-    try{ await store.toggleLike(id,liked) }catch(e){}
+    try{ await store.toggleLike(id) }catch(e){}
     busy[id]=false; await refresh();
   }
   async function addComment(id,inp,sb){
@@ -233,9 +359,12 @@
 
   // ---------- boot ----------
   (async function(){
-    var cfg=window.TOML_CONFIG||{};
-    if(cfg.supabaseUrl && cfg.supabaseAnonKey && window.supabase){
-      try{ store = await supabaseStore(cfg) }catch(e){ console.warn("Shared wall unavailable, using local mode",e) }
+    setupVideo();
+    var saved = normalizeId(lsGet("toml_id",null));
+    await setIdentity(saved || newId(), !saved);
+    renderIdCards();
+    if(CFG.supabaseUrl && CFG.supabaseAnonKey && window.supabase){
+      try{ store = supabaseStore(CFG); await store.load() }catch(e){ store=null; console.warn("Shared wall unavailable, using local mode",e) }
     }
     if(!store) store = localStore();
     await refresh();

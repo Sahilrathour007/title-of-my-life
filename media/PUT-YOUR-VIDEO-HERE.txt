@@ -1,0 +1,8 @@
+Put your background files in this folder:
+
+  background.mp4          your 16:9 video (required for the video background)
+  background.webm         optional, for browsers without MP4 support
+  background-mobile.mp4   optional 9:16 cut for phones held upright
+  poster.jpg              a still frame, shown while the video loads
+
+Easiest way: run  tools/prepare-video.sh your-video.mp4  and it makes all of these for you.
