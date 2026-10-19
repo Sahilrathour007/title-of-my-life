@@ -18,7 +18,14 @@ tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
 # 1. Master clip: silent, 24 fps, at most $max seconds. No audio track also avoids the small gap audio adds at each loop.
 len=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$in")
 len=$(awk -v a="$len" -v b="$max" 'BEGIN{print (a<b)?a:b}')
-ffmpeg -y -v error -i "$in" -t "$len" -an -vf "fps=24,format=yuv420p" -c:v libx264 -crf 16 -preset fast "$tmp/master.mp4"
+#    iPhone HDR footage is tone-mapped to normal colours, otherwise it looks grey and washed out in browsers.
+vf="fps=24,format=yuv420p"
+trc=$(ffprobe -v error -select_streams v:0 -show_entries stream=color_transfer -of csv=p=0 "$in")
+if [ "$trc" = "arib-std-b67" ] || [ "$trc" = "smpte2084" ]; then
+  echo "HDR video detected, converting colours for the web..."
+  vf="zscale=t=linear:npl=100,format=gbrpf32le,zscale=p=bt709,tonemap=tonemap=mobius:param=0.8:desat=0,zscale=t=bt709:m=bt709:r=tv,fps=24,format=yuv420p"
+fi
+ffmpeg -y -v error -i "$in" -t "$len" -an -vf "$vf" -c:v libx264 -crf 16 -preset fast "$tmp/master.mp4"
 
 # 2. Seamless loop: play from $fade s to the end, crossfading the last $fade s into the opening $fade s.
 #    The final frame then equals the first frame, so the jump back to the start is invisible.

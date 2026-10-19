@@ -39,6 +39,14 @@ The anon key is safe to publish. The tables are read-only to the public, and eve
 Your video is 16:9, but most visitors hold a phone upright (about 9:19.5). Covering that screen with a 16:9 video
 **cuts off about two-thirds of the frame**, so only the middle third is left. You have two options:
 
+**On Windows:** put your video (any name, `.MOV` or `.mp4`) in the `media` folder, then **double-click `tools/prepare-video.bat`**.
+It needs ffmpeg once: open PowerShell and run `winget install --id Gyan.FFmpeg -e`, then open a new window.
+The script does everything below, fixes iPhone HDR colours, moves your original to `media/_original` (not published) and switches on the phone video.
+
+Don't just rename a `.MOV` to `.mp4`: iPhone videos are usually HEVC, which many browsers can't play, and they're far too big for phones.
+
+**On Mac/Linux:**
+
 1. **Best:** let the script make a 9:16 phone version for you (needs [ffmpeg](https://ffmpeg.org/download.html)):
    ```bash
    tools/prepare-video.sh my-video.mp4          # phone cut taken from the centre
@@ -80,5 +88,5 @@ Anonymous + free text means you **will** get spam and, eventually, something hur
 | `app.js` | Flow, wall rendering, local and Supabase storage |
 | `config.js` | Supabase keys and background video settings |
 | `media/` | Your background video and poster image |
-| `tools/prepare-video.sh` | Makes web-ready desktop and phone videos from your file |
+| `tools/prepare-video.bat` / `.ps1` / `.sh` | Makes web-ready, seamlessly looping desktop and phone videos from your file (Windows / Mac & Linux) |
 | `supabase/schema.sql` | Tables, security rules and write functions |

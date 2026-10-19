@@ -117,7 +117,10 @@
     var tries = [file];
     if(/\.mp4$/i.test(file) && v.canPlayType('video/webm; codecs="vp9"')) tries.unshift(file.replace(/\.mp4$/i,".webm"));
     function next(){
-      if(!tries.length){ document.body.classList.remove("has-video"); btn.hidden=true; return }
+      if(!tries.length){
+        console.warn("Background video: couldn't play "+file+". Check the file is in the media folder with exactly that name (web hosts care about upper/lower case), or run tools/prepare-video.");
+        document.body.classList.remove("has-video"); btn.hidden=true; return;
+      }
       v.src = tries.shift(); v.play().catch(function(){});
     }
     v.addEventListener("error", next);
