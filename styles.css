@@ -102,7 +102,9 @@ p.hint.center{margin-top:14px}
 #writeCta{margin:0 0 32px}
 .pair{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin:8px 0 48px}
 @media(max-width:760px){.pair{grid-template-columns:1fr}}
-.col{min-width:0}
+.col{min-width:0;display:flex;flex-direction:column}
+.col > div:last-child{flex:1;display:flex;flex-direction:column}
+.col > div:last-child > .empty,.col > div:last-child > .script{flex:1}
 .tag{font:600 12px var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin-bottom:10px}
 .feedhead{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
 .feedhead h2{margin:0;font-size:26px}
@@ -137,7 +139,9 @@ p.hint.center{margin-top:14px}
 /* 16px text: iPhones zoom the page in on any smaller input */
 .cm input{flex:1;min-width:0;height:44px;border:1px solid var(--paper-line);background:#fff;color:var(--paper-ink);padding:0 16px;border-radius:var(--r);font:16px var(--sans);box-shadow:none}
 .cm button{flex:none;height:44px;padding:0 20px;font-size:15px;background:var(--paper-ink);color:var(--paper)}
-.empty{border:1.5px dashed var(--line);border-radius:var(--r);padding:30px 20px;color:var(--muted);text-align:center;font-style:italic;font-family:var(--serif)}
+/* Empty-state boxes: plain interface type (Bodoni's hairlines break up at this size), centred in the box */
+.empty{border:1px dashed var(--line);border-radius:var(--r);padding:28px 22px;color:var(--fg);opacity:.82;text-align:center;
+  font:400 16px/1.55 var(--sans);display:flex;align-items:center;justify-content:center;min-height:120px;text-wrap:balance}
 .foot{max-width:640px;margin:64px auto 0;text-align:center;color:var(--muted);font-size:13px}
 
 /* ---------- background video ----------
@@ -155,7 +159,7 @@ body.has-video .bg{display:block}
 body.has-video .glow{display:none}
 body.has-video h1,body.has-video .q-big,body.has-video .film-title{text-shadow:0 1px 18px color-mix(in srgb,var(--bg) 80%,transparent)}
 body.has-video .lead,body.has-video .hint,body.has-video .eyebrow{color:color-mix(in srgb,var(--fg) 82%,var(--accent))}
-body:not(.has-video) body.has-video .empty,body.has-video .note{background:color-mix(in srgb,var(--paper) 88%,transparent);color:var(--paper-muted);border-color:var(--paper-line)}
+body.has-video .empty,body.has-video .note{background:color-mix(in srgb,var(--paper) 88%,transparent);color:var(--paper-muted);border-color:var(--paper-line)}
 
 /* ---------- cinema avatars ---------- */
 .av{display:inline-grid;place-items:center;flex:none;width:28px;height:28px;border-radius:50%;color:#fff6e8;box-shadow:0 0 0 2px var(--paper),0 1px 3px rgba(0,0,0,.25)}
