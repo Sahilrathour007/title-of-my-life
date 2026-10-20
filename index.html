@@ -37,7 +37,6 @@
         <li><span>2</span><div><b>Write a scene</b>Where are you? Who's there? It can be three sentences.</div></li>
         <li><span>3</span><div><b>Pin it to the wall</b>Read others, leave a like or a kind word.</div></li>
       </ol>
-      <div data-id-slot="full"></div>
       <div class="row center">
         <button id="start" class="primary">Let's begin</button>
         <button id="peek" class="ghost">Just read the wall first</button>
@@ -86,7 +85,7 @@
         <h2>Thank you for sharing. 🌱</h2>
         <p>Your script is on the wall. Writing down the life you want is the first scene of living it.</p>
       </div>
-      <div class="idwrap" data-id-slot="compact"></div>
+      <p class="youare" id="youAre"></p>
       <h1 class="wall-h">The wall</h1>
       <p class="lead center">Real scripts from real people — all anonymous. Be kind; someone was brave to write this.</p>
       <div id="note" class="note" hidden></div>
@@ -118,19 +117,6 @@
     </div>
   </dialog>
 
-  <dialog id="restore" aria-labelledby="rtitle">
-    <form id="rform" method="dialog">
-      <h2 id="rtitle">Use a saved ID</h2>
-      <p class="hint">Paste the ID you saved earlier. Your script, likes and comments will come back with it.</p>
-      <label class="sr" for="rid">Your saved ID</label>
-      <input id="rid" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="AMBER-FOX-7Q4K-9XPM">
-      <p class="msg" id="rmsg" role="status"></p>
-      <div class="row">
-        <button type="button" class="ghost" id="rcancel">Cancel</button>
-        <button type="submit" class="primary">Use this ID</button>
-      </div>
-    </form>
-  </dialog>
 
 
   <footer class="foot">

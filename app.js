@@ -192,67 +192,37 @@
   $("peek").addEventListener("click",function(){ show("dash") });
   document.querySelector(".scrollcue").addEventListener("click",function(e){ e.preventDefault(); $("below").scrollIntoView({behavior:"smooth"}) });
 
-  // ---------- ID card ----------
-  function flash(el,text){ var o=el.textContent; el.textContent=text; setTimeout(function(){ el.textContent=o },1600) }
-  function idText(){
-    return "Title of My Life — your anonymous ID\n\n"+me.id+"\n\nKeep it private: anyone with this ID can post as you.\nTo come back on any device, open the site, tap “Use a saved ID” and paste it.\n";
+  // ---------- cinema avatars ----------
+  // Everyone gets a film-themed picture worked out from their anonymous ID, so the same person always looks the same
+  // on every card and comment, and nothing extra is stored.
+  var ICONS = [
+    ["Clapperboard",'<path d="M4 10h16v9a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/><path d="M4 10 3.3 6.6a1 1 0 0 1 .8-1.2L17.8 3a1 1 0 0 1 1.2.8L19.6 7z"/><path d="m8 5.2 2.4 3.4M13 4.3l2.4 3.4"/>'],
+    ["Film reel",'<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="1.2"/><circle cx="12" cy="7.3" r="1.9"/><circle cx="12" cy="16.7" r="1.9"/><circle cx="7.3" cy="12" r="1.9"/><circle cx="16.7" cy="12" r="1.9"/>'],
+    ["Popcorn",'<path d="M6 10h12l-1.6 10.2a1 1 0 0 1-1 .8H8.6a1 1 0 0 1-1-.8z"/><path d="M10 10l.5 11M14 10l-.5 11"/><path d="M6.5 10a2.5 2.5 0 0 1 1-4.6 3 3 0 0 1 5-1.6 3 3 0 0 1 5 1.6 2.5 2.5 0 0 1 1 4.6"/>'],
+    ["Movie camera",'<rect x="3" y="10" width="12" height="9" rx="1.5"/><path d="m15 13 5-3v9l-5-3"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="12" cy="6.5" r="2.5"/>'],
+    ["Ticket",'<path d="M3 8a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v2a2 2 0 0 0 0 4v2a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-2a2 2 0 0 0 0-4z"/><path d="M15 7v2M15 11v2M15 15v2"/>'],
+    ["Theatre masks",'<path d="M3 5c3 1 6 1 9 0v6a4.5 4.5 0 0 1-9 0z"/><path d="M12 9c3 1 6 1 9 0v6a4.5 4.5 0 0 1-9 0"/><path d="M5.5 8.5H7M8.5 8.5H10M5.8 12.5a2 2 0 0 0 3.4 0M14.5 12.5H16M17.5 12.5H19M14.8 17.5a2 2 0 0 1 3.4 0"/>'],
+    ["Director's chair",'<path d="M5 4v8M19 4v8M5 6.5h14M5 12h14M6.5 12 17.5 20M17.5 12 6.5 20"/>'],
+    ["Megaphone",'<path d="M3 10v4a1 1 0 0 0 1 1h2l8 4V5L6 9H4a1 1 0 0 0-1 1z"/><path d="m6 15 1.5 5h2l-1-4.5"/><path d="M18 9a4 4 0 0 1 0 6"/>'],
+    ["Star",'<path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/>'],
+    ["Film strip",'<rect x="4" y="3" width="16" height="18" rx="1.5"/><path d="M8 3v18M16 3v18M4 7.5h4M4 12h4M4 16.5h4M16 7.5h4M16 12h4M16 16.5h4"/>'],
+    ["3D glasses",'<path d="M2 9h20v5a2 2 0 0 1-2 2h-4.5l-2-2.5h-3l-2 2.5H4a2 2 0 0 1-2-2z"/><path d="M5 11.5h4M15 11.5h4"/>'],
+    ["Award",'<path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4"/><path d="M12 13v4M9.5 17h5v3h-5z"/>']
+  ];
+  // Velvet red, gold, teal, navy, plum, terracotta, forest, charcoal: all dark enough for a cream icon on top.
+  var AV_COLORS = ["#9f1d2d","#a16207","#0f766e","#1e3a8a","#7e2e5c","#b4532a","#2f6b4f","#3b3330"];
+  function hnum(str){ var n=0; for(var i=0;i<str.length;i++) n=(n*31+str.charCodeAt(i))>>>0; return n }
+  function avatar(hash,size){
+    var n=hnum(String(hash||"")), ic=ICONS[n%ICONS.length];
+    var a=document.createElement("span"); a.className="av"; a.style.background=AV_COLORS[(n>>>8)%AV_COLORS.length];
+    if(size){ a.style.width=a.style.height=size+"px" }
+    a.title=ic[0]; a.setAttribute("aria-hidden","true");
+    a.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+ic[1]+'</svg>';
+    return a;
   }
-  function renderIdCards(){
-    document.querySelectorAll("[data-id-slot]").forEach(function(slot){
-      var compact = slot.dataset.idSlot==="compact";
-      var c=document.createElement("div"); c.className="idcard"+(compact?" compact":"");
-      var h=document.createElement("div"); h.className="idhead";
-      h.innerHTML='<span class="idlabel"></span><span class="idtag"></span>';
-      h.querySelector(".idlabel").textContent = me.fresh&&!compact ? "Your new anonymous ID" : "Your anonymous ID";
-      h.querySelector(".idtag").textContent = "shows as "+tagOf(me.hash);
-      var code=document.createElement("output"); code.className="idcode"; code.textContent=me.id;
-      var p=document.createElement("p"); p.className="idnote";
-      p.textContent="No name, no email — this code is you here. Save it to find your script again on any device. Keep it private.";
-      var row=document.createElement("div"); row.className="idrow";
-      var copy=document.createElement("button"); copy.type="button"; copy.textContent="Copy";
-      copy.addEventListener("click",async function(){
-        try{ await navigator.clipboard.writeText(me.id); flash(copy,"Copied ✓") }
-        catch(e){ var r=document.createRange(); r.selectNodeContents(code); getSelection().removeAllRanges(); getSelection().addRange(r); flash(copy,"Press Ctrl/⌘+C") }
-      });
-      var save=document.createElement("button"); save.type="button"; save.textContent="Save";
-      save.addEventListener("click",async function(){
-        // Phones: the share sheet lets people save to Notes/Photos/Messages to themselves. Elsewhere: download a .txt.
-        if(navigator.share && matchMedia("(pointer:coarse)").matches){
-          try{ await navigator.share({title:"My anonymous ID", text:idText()}); return }catch(e){ if(e && e.name==="AbortError") return }
-        }
-        var a=document.createElement("a");
-        a.href=URL.createObjectURL(new Blob([idText()],{type:"text/plain"}));
-        a.download="title-of-my-life-id.txt"; document.body.appendChild(a); a.click(); a.remove();
-        setTimeout(function(){ URL.revokeObjectURL(a.href) },1000);
-        flash(save,"Saved ✓");
-      });
-      var use=document.createElement("button"); use.type="button"; use.className="link"; use.textContent="Use a saved ID";
-      use.addEventListener("click",openRestore);
-      row.append(copy,save,use);
-      if(compact){
-        var det=document.createElement("details"); var sum=document.createElement("summary");
-        sum.textContent="You're anonymous "+tagOf(me.hash)+" · your ID";
-        det.append(sum,code,p,row); c.append(det);
-      } else c.append(h,code,p,row);
-      slot.replaceChildren(c);
-    });
+  function byline(s){
+    return s.owner_hash===me.hash ? "written by you" : s.example ? "written by someone like you" : "written by anonymous "+tagOf(s.owner_hash);
   }
-  function openRestore(){
-    $("rid").value=""; $("rmsg").textContent="";
-    if($("restore").showModal) $("restore").showModal(); else $("restore").setAttribute("open","");
-    $("rid").focus();
-  }
-  $("rcancel").addEventListener("click",function(){ $("restore").close ? $("restore").close() : $("restore").removeAttribute("open") });
-  $("rform").addEventListener("submit",async function(e){
-    e.preventDefault();
-    var id=normalizeId($("rid").value);
-    if(!id){ $("rmsg").textContent="That doesn't look like an ID. It should be like AMBER-FOX-7Q4K-9XPM."; return }
-    await setIdentity(id,false);
-    lsSet("toml_mine",null); justPosted=false;
-    $("restore").close ? $("restore").close() : $("restore").removeAttribute("open");
-    renderIdCards(); await refresh();
-    if(myScript()) show("dash"); else draw();
-  });
 
   // ---------- step 1 ----------
   TITLE_IDEAS.forEach(function(t){
@@ -342,8 +312,8 @@
     }
     var t=document.createElement("p"); t.className="t"; t.textContent=s.title; card.appendChild(t);
     var by=document.createElement("p"); by.className="by";
-    by.textContent = s.owner_hash===me.hash ? "written by you ("+tagOf(me.hash)+")" : s.example ? "written by someone like you" : "written by anonymous "+tagOf(s.owner_hash);
-    if(s.edited_at) by.textContent+=" · edited";
+    var byText=document.createElement("span"); byText.textContent = byline(s) + (s.edited_at ? " · edited" : "");
+    by.append(avatar(s.owner_hash), byText);
     card.appendChild(by);
     // Long scripts scroll inside a fixed-height box; tapping the box (or "Read the full script") opens the big reader.
     var b=document.createElement("p"); b.className="b"; b.textContent=s.body;
@@ -363,8 +333,8 @@
 
     var cm=document.createElement("div"); cm.className="cm";
     data.comments.filter(function(x){ return x.script_id===s.id }).forEach(function(x){
-      var p=document.createElement("p"); p.textContent=x.text;
-      if(x.owner_hash){ var w=document.createElement("small"); w.textContent=" — "+(x.owner_hash===me.hash?"you":tagOf(x.owner_hash)); p.appendChild(w) }
+      var p=document.createElement("p"), tx=document.createElement("span"); tx.textContent=x.text;
+      p.append(avatar(x.owner_hash||"anon",24), tx);
       cm.appendChild(p);
     });
     var f=document.createElement("form");
@@ -405,7 +375,8 @@
 
   function openReader(s){
     $("rdTitle").textContent=s.title;
-    $("rdBy").textContent = s.owner_hash===me.hash ? "written by you" : s.example ? "written by someone like you" : "written by anonymous "+tagOf(s.owner_hash);
+    var t=document.createElement("span"); t.textContent=byline(s);
+    $("rdBy").replaceChildren(avatar(s.owner_hash,30), t);
     $("rdBody").textContent=s.body;
     var d=$("reader"); d.showModal ? d.showModal() : d.setAttribute("open",""); d.querySelector(".rdscroll").scrollTop=0;
     document.documentElement.classList.add("noscroll");
@@ -429,6 +400,9 @@
       ? "Couldn't reach the shared wall, so you're seeing a private copy in this browser. Please try again in a moment. ("+(sharedError.message||sharedError.code||"connection error")+")"
       : "You're in local mode: scripts are saved only in this browser, and the cards marked “Example” are samples. Connect a database to share the wall with everyone (see the README).";
 
+    var ya=document.createElement("span"); ya.textContent="You appear on the wall as";
+    var yt=document.createElement("b"); yt.textContent=tagOf(me.hash);
+    $("youAre").replaceChildren(ya, avatar(me.hash,30), yt);
     var mine=myScript();
     $("writeCta").hidden=!!mine;
     $("mine").replaceChildren(mine ? scriptCard(mine,"m") : empty("Your script will appear here once you write it."));
@@ -463,7 +437,6 @@
     setupVideo();
     var saved = normalizeId(lsGet("toml_id",null));
     await setIdentity(saved || newId(), !saved);
-    renderIdCards();
     if(CFG.supabaseUrl && CFG.supabaseAnonKey && window.supabase){
       try{ store = supabaseStore(CFG); await store.load() }catch(e){ store=null; sharedError=e; console.warn("Shared wall unavailable, using local mode",e) }
     }
