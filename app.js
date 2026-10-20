@@ -319,13 +319,14 @@
     var b=document.createElement("p"); b.className="b"; b.textContent=s.body;
     b.addEventListener("click",function(){ if(card.classList.contains("long") && !getSelection().toString()) openReader(s) });
     card.appendChild(b);
-    var mb=document.createElement("button"); mb.type="button"; mb.className="more"; mb.textContent="Read the full script ⤢";
+    var mb=document.createElement("button"); mb.type="button"; mb.className="more"; mb.textContent="Read the full script";
     mb.addEventListener("click",function(){ openReader(s) });
     card.appendChild(mb);
     var n=likeCount(s.id), lk=iLiked(s.id);
     var bar=document.createElement("div"); bar.className="bar";
     var lb=document.createElement("button"); lb.type="button"; lb.className="like"; lb.setAttribute("aria-pressed",lk?"true":"false");
-    lb.textContent=lk?"♥ Loved":"♡ Love this"; lb.disabled=!!busy[s.id];
+    lb.innerHTML='<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>';
+    lb.append(lk?"Loved":"Love this"); lb.disabled=!!busy[s.id];
     lb.addEventListener("click",function(){ toggleLike(s.id,lk) });
     bar.appendChild(lb);
     var c=document.createElement("span"); c.textContent = n ? n+(n===1?" person loved this":" people loved this") : "Be the first to show some love"; bar.appendChild(c);
@@ -409,7 +410,7 @@
 
     var best=null, bn=0;
     data.scripts.forEach(function(s){ if(mine&&s.id===mine.id) return; var n=likeCount(s.id); if(n>bn||(n===bn&&n>0&&best&&s.created_at<best.created_at)){ best=s; bn=n } });
-    $("top").replaceChildren(best ? scriptCard(best,"t") : empty("Nothing loved yet. Read a script and tap ♡ on the one that moves you."));
+    $("top").replaceChildren(best ? scriptCard(best,"t") : empty("Nothing loved yet. Read a script and tap “Love this” on the one that moves you."));
 
     var sorted=data.scripts.slice().sort(sortBy==="loved"
       ? function(a,b){ return likeCount(b.id)-likeCount(a.id) || b.created_at-a.created_at }

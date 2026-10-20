@@ -7,7 +7,8 @@ A small, anonymous website. Visitors give their life a film title, write a short
 It's a warmer rework of an earlier dark "theatre" version:
 
 - **A welcome screen** that explains the three steps before asking for anything
-- **Golden-hour palette** (cream, peach, terracotta) with automatic dark mode
+- **Velvet & Gold palette** (cream paper, cinema-curtain red, projector gold on near-black at night) with automatic dark mode
+- **Film-title type**: Bodoni Moda headings, Archivo condensed caps for buttons and labels, Courier Prime for the scripts; square corners throughout
 - **Title ideas and writing nudges** so a blank page isn't scary
 - **A progress bar**, gentle validation copy, and a thank-you moment after posting
 - **Kind-first wall**: "Love this" instead of "Like", "Leave a kind word…" comments, newest / most-loved sorting
