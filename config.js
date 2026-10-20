@@ -2,8 +2,8 @@ window.TOML_CONFIG = {
   // ---- Shared wall (see README → "Turn on the shared wall") ----
   // Leave empty and the site runs in "local mode": everything stays in this browser.
   // The anon key is meant to be public; the database only accepts writes through the functions in supabase/schema.sql.
-  supabaseUrl: "",
-  supabaseAnonKey: "",
+  supabaseUrl: "https://ugoobcnusxmvdghghhtt.supabase.co",
+  supabaseAnonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVnb29iY251c3htdmRnaGdoaHR0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI0Mzk4MTksImV4cCI6MjEwODAxNTgxOX0.qkZFtNaagypy3aDo2ZvhvqiXx-GyrerwS-WBm4ZfHeA",
 
   // ---- Background video (see README → "Background video") ----
   // Put your files in the media/ folder. Leave backgroundVideo empty to turn the video off.

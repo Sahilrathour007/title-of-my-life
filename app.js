@@ -172,7 +172,7 @@
   }
 
   // ---------- state ----------
-  var store=null, data={scripts:[],likes:[],comments:[]};
+  var store=null, sharedError=null, data={scripts:[],likes:[],comments:[]};
   var draftTitle="", sortBy="new", busy={}, expanded={}, justPosted=false, editing=null;
 
   function show(which){
@@ -425,7 +425,9 @@
     $("thanks").hidden=!justPosted;
     var note=$("note");
     note.hidden=store.shared;
-    if(!store.shared) note.textContent="You're in local mode: scripts are saved only in this browser, and the cards marked “Example” are samples. Connect a database to share the wall with everyone (see the README).";
+    if(!store.shared) note.textContent = sharedError
+      ? "Couldn't reach the shared wall, so you're seeing a private copy in this browser. Please try again in a moment. ("+(sharedError.message||sharedError.code||"connection error")+")"
+      : "You're in local mode: scripts are saved only in this browser, and the cards marked “Example” are samples. Connect a database to share the wall with everyone (see the README).";
 
     var mine=myScript();
     $("writeCta").hidden=!!mine;
@@ -463,7 +465,7 @@
     await setIdentity(saved || newId(), !saved);
     renderIdCards();
     if(CFG.supabaseUrl && CFG.supabaseAnonKey && window.supabase){
-      try{ store = supabaseStore(CFG); await store.load() }catch(e){ store=null; console.warn("Shared wall unavailable, using local mode",e) }
+      try{ store = supabaseStore(CFG); await store.load() }catch(e){ store=null; sharedError=e; console.warn("Shared wall unavailable, using local mode",e) }
     }
     if(!store) store = localStore();
     await refresh();
