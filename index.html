@@ -107,6 +107,17 @@
     </section>
   </main>
 
+  <dialog id="reader" aria-labelledby="rdTitle">
+    <div class="rdpage">
+      <button type="button" id="rdClose" class="rdclose" aria-label="Close">✕</button>
+      <div class="rdscroll">
+        <h2 id="rdTitle" class="rdtitle"></h2>
+        <p id="rdBy" class="rdby"></p>
+        <p id="rdBody" class="rdbody"></p>
+      </div>
+    </div>
+  </dialog>
+
   <dialog id="restore" aria-labelledby="rtitle">
     <form id="rform" method="dialog">
       <h2 id="rtitle">Use a saved ID</h2>

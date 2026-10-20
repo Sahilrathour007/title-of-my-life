@@ -345,15 +345,13 @@
     by.textContent = s.owner_hash===me.hash ? "written by you ("+tagOf(me.hash)+")" : s.example ? "written by someone like you" : "written by anonymous "+tagOf(s.owner_hash);
     if(s.edited_at) by.textContent+=" · edited";
     card.appendChild(by);
+    // Long scripts scroll inside a fixed-height box; tapping the box (or "Read the full script") opens the big reader.
     var b=document.createElement("p"); b.className="b"; b.textContent=s.body;
-    var long = s.body.length>600 || s.body.split("\n").length>14, open = !long || expanded[s.id+k];
-    if(!open) b.classList.add("clamp");
+    b.addEventListener("click",function(){ if(card.classList.contains("long") && !getSelection().toString()) openReader(s) });
     card.appendChild(b);
-    if(long){
-      var mb=document.createElement("button"); mb.className="more"; mb.textContent=open?"Show less":"Keep reading →";
-      mb.addEventListener("click",function(){ expanded[s.id+k]=!open; draw() });
-      card.appendChild(mb);
-    }
+    var mb=document.createElement("button"); mb.type="button"; mb.className="more"; mb.textContent="Read the full script ⤢";
+    mb.addEventListener("click",function(){ openReader(s) });
+    card.appendChild(mb);
     var n=likeCount(s.id), lk=iLiked(s.id);
     var bar=document.createElement("div"); bar.className="bar";
     var lb=document.createElement("button"); lb.type="button"; lb.className="like"; lb.setAttribute("aria-pressed",lk?"true":"false");
@@ -394,6 +392,29 @@
     sb.disabled=false; await refresh();
   }
 
+  // Only scripts that are taller than their box get the scrollbar styling and the "read full" button.
+  function markLong(){
+    document.querySelectorAll(".script").forEach(function(card){
+      var b=card.querySelector(".b"); if(!b) return;
+      var long=b.scrollHeight>b.clientHeight+2;
+      card.classList.toggle("long",long);
+      if(long){ b.tabIndex=0; b.setAttribute("aria-label","Script text, scrollable") } else { b.removeAttribute("tabindex"); b.removeAttribute("aria-label") }
+    });
+  }
+  addEventListener("resize",function(){ if(!$("dash").hidden) markLong() });
+
+  function openReader(s){
+    $("rdTitle").textContent=s.title;
+    $("rdBy").textContent = s.owner_hash===me.hash ? "written by you" : s.example ? "written by someone like you" : "written by anonymous "+tagOf(s.owner_hash);
+    $("rdBody").textContent=s.body;
+    var d=$("reader"); d.showModal ? d.showModal() : d.setAttribute("open",""); d.querySelector(".rdscroll").scrollTop=0;
+    document.documentElement.classList.add("noscroll");
+  }
+  function closeReader(){ var d=$("reader"); d.close ? d.close() : d.removeAttribute("open") }
+  $("rdClose").addEventListener("click",closeReader);
+  $("reader").addEventListener("close",function(){ document.documentElement.classList.remove("noscroll") });
+  $("reader").addEventListener("click",function(e){ if(e.target===this) closeReader() }); // tap outside the page to close
+
   function empty(text,full){ var e=document.createElement("div"); e.className="empty"; if(full) e.style.gridColumn="1/-1"; e.textContent=text; return e }
 
   function draw(){
@@ -421,6 +442,7 @@
     $("count").textContent = n ? n+(n===1?" script on the wall":" scripts on the wall") : "";
     $("feed").replaceChildren.apply($("feed"), sorted.length ? sorted.map(function(s){ return scriptCard(s,"f") }) : [empty("The wall is empty. Yours could be the very first scene.",true)]);
 
+    markLong();
     document.querySelectorAll("input[data-k]").forEach(function(i){ if(keep[i.dataset.k]) i.value=keep[i.dataset.k] });
     if(focusK){ var f=document.querySelector('input[data-k="'+focusK+'"]'); if(f) f.focus() }
   }
